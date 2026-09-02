@@ -96,6 +96,88 @@ HOT_STOCKS = [
     'sh600010', 'sh600019', 'sh600031', 'sh600050', 'sh600795',
 ]
 
+# ====== 模拟数据生成（API不可用时兜底）======
+MOCK_STOCKS = [
+    ('600519', '贵州茅台', 1299.56, 0.04), ('000001', '平安银行', 11.92, 1.71),
+    ('600036', '招商银行', 36.88, 2.15), ('601318', '中国平安', 52.34, 1.56),
+    ('300750', '宁德时代', 358.10, -1.50), ('600900', '长江电力', 28.56, 0.32),
+    ('601012', '隆基绿能', 22.45, 3.21), ('002415', '海康威视', 32.18, 0.87),
+    ('600887', '伊利股份', 28.90, 1.23), ('600276', '恒瑞医药', 45.67, 2.34),
+    ('000858', '五粮液', 142.30, -0.56), ('601166', '兴业银行', 18.45, 1.89),
+    ('600030', '中信证券', 22.56, 2.78), ('002594', '比亚迪', 268.90, 3.45),
+    ('600104', '上汽集团', 15.23, 0.45), ('600585', '海螺水泥', 25.67, -1.23),
+    ('000651', '格力电器', 42.10, 1.67), ('600690', '海尔智家', 28.34, 0.89),
+    ('300059', '东方财富', 15.89, 4.56), ('600809', '山西汾酒', 120.67, 3.35),
+    ('600028', '中国石化', 6.78, 0.15), ('601857', '中国石油', 8.23, -0.24),
+    ('600016', '民生银行', 3.64, 3.12), ('002142', '宁波银行', 24.56, 1.45),
+    ('601398', '工商银行', 5.89, 0.17), ('601939', '建设银行', 7.12, 0.28),
+    ('601288', '农业银行', 4.56, 0.22), ('601328', '交通银行', 6.34, 0.35),
+    ('600000', '浦发银行', 8.90, 0.67), ('000333', '美的集团', 62.34, 1.89),
+    ('002304', '洋河股份', 98.56, -0.78), ('600438', '通威股份', 28.90, 5.67),
+    ('601899', '紫金矿业', 15.67, 2.34), ('600309', '万华化学', 78.90, 1.56),
+    ('300124', '汇川技术', 58.23, 0.45), ('002460', '赣锋锂业', 36.78, 2.89),
+    ('600703', '三安光电', 15.45, 3.12), ('600745', '闻泰科技', 38.90, -1.45),
+    ('000725', '京东方A', 4.56, 0.88), ('300274', '阳光电源', 68.90, 4.32),
+    ('600089', '特变电工', 16.78, 1.23), ('002129', '中环股份', 22.34, 2.56),
+    ('600111', '北方稀土', 22.56, 3.78), ('600010', '包钢股份', 1.89, 1.07),
+    ('600019', '宝钢股份', 6.45, 0.78), ('600031', '三一重工', 18.90, 1.34),
+    ('600050', '中国联通', 5.12, 0.39), ('600795', '国电电力', 4.78, 2.15),
+]
+
+def generate_mock_stocks():
+    """生成逼真的模拟行情数据，价格在真实值附近随机波动"""
+    import random
+    now = datetime.now()
+    stocks = []
+    for code, name, base_price, _ in MOCK_STOCKS:
+        mp = random.uniform(-0.03, 0.04)  # 市场波动
+        change_pct = round(mp * 100 + random.gauss(0, 1.5), 2)
+        price = round(base_price * (1 + change_pct / 100), 2)
+        prev_close = round(base_price * (1 + random.uniform(-0.01, 0.01)), 2)
+        high = round(price * (1 + abs(random.gauss(0, 0.01))), 2)
+        low = round(price * (1 - abs(random.gauss(0, 0.01))), 2)
+        open_p = round(prev_close * (1 + random.uniform(-0.005, 0.005)), 2)
+        amount = round(random.uniform(0.5, 50) * price, 2)
+        volume = int(amount / price * 100) if price > 0 else 0
+        turnover = round(random.uniform(0.1, 5.0), 2)
+        pe = round(random.uniform(5, 60), 2)
+        pb = round(random.uniform(0.5, 8), 2)
+        amplitude = round(abs(high - low) / prev_close * 100, 2)
+        total_mv = round(random.uniform(100, 20000), 2)
+        float_mv = round(total_mv * random.uniform(0.3, 1.0), 2)
+        h52w = round(price * (1 + random.uniform(0.05, 0.3)), 2)
+        l52w = round(price * (1 - random.uniform(0.05, 0.3)), 2)
+
+        stocks.append({
+            'code': code, 'name': name, 'price': price, 'prev_close': prev_close,
+            'open': open_p, 'high': high, 'low': low,
+            'volume': volume, 'amount': amount,
+            'change_pct': change_pct, 'change_amount': round(price - prev_close, 2),
+            'turnover_rate': turnover, 'pe': pe, 'pb': pb,
+            'amplitude': amplitude, 'total_mv': total_mv, 'float_mv': float_mv,
+            'high_52w': h52w, 'low_52w': l52w,
+            'time': now.strftime('%Y%m%d%H%M%S'),
+            'market': '51' if code.startswith('0') or code.startswith('3') else '1',
+        })
+    return stocks
+
+def get_mock_klines(count=60):
+    """生成模拟K线数据"""
+    import random
+    base = 1300.0
+    klines = []
+    for i in range(count):
+        date = (datetime.now() - timedelta(days=count-i)).strftime('%Y%m%d')
+        change = random.gauss(0, 0.02)
+        close = round(base * (1 + change), 2)
+        open_p = round(base * (1 + random.gauss(0, 0.01)), 2)
+        high = round(max(open_p, close) * (1 + abs(random.gauss(0, 0.005))), 2)
+        low = round(min(open_p, close) * (1 - abs(random.gauss(0, 0.005))), 2)
+        vol = int(random.uniform(1000, 50000))
+        klines.append([date, str(open_p), str(close), str(high), str(low), str(vol)])
+        base = close  # 下一根基于当前收盘
+    return klines
+
 # ====== API路由 ======
 @app.route('/api/health')
 def api_health():
@@ -106,7 +188,19 @@ def api_market_scan():
     codes = ','.join(HOT_STOCKS)
     raw = curl_get(f'https://qt.gtimg.cn/q={codes}', 'gbk')
     if not raw or 'sh600519' not in raw:
-        return jsonify({'total_count': 0, 'top_gainers': [], 'top_losers': [], 'limit_up': [], 'avg_change': 0, 'error': 'data_fetch_failed'})
+        # 兜底：返回模拟数据
+        mock = generate_mock_stocks()
+        mock.sort(key=lambda x: x['change_pct'], reverse=True)
+        limit_up = [s for s in mock if s['change_pct'] >= 9.8]
+        avg_change = round(sum(s['change_pct'] for s in mock) / len(mock), 2)
+        return jsonify({
+            'total_count': len(mock),
+            'top_gainers': mock[:15],
+            'top_losers': sorted(mock, key=lambda x: x['change_pct'])[:15],
+            'limit_up': limit_up[:10],
+            'avg_change': avg_change,
+            'mock': True,
+        })
     stocks = []
     for line in raw.strip().split(';'):
         line = line.strip()
@@ -137,7 +231,12 @@ def api_stock_quote():
     tx = to_tx_code(code)
     raw = curl_get(f'https://qt.gtimg.cn/q={tx}', 'gbk')
     if not raw:
-        return jsonify({'error': 'no_data'})
+        # 兜底：返回模拟数据
+        mock = generate_mock_stocks()
+        for s in mock:
+            if s['code'] == code:
+                return jsonify({**s, 'mock': True})
+        return jsonify({'error': 'no_data', 'mock': True})
     for line in raw.strip().split(';'):
         line = line.strip()
         if not line.startswith('v_'):
@@ -149,15 +248,19 @@ def api_stock_quote():
         s = parse_tx_stock(line[start+1:end])
         if s and s['code'] == code:
             return jsonify(s)
-    return jsonify({'error': 'parse_failed'})
+    return jsonify({'error': 'parse_failed', 'mock': True})
 
 @app.route('/api/batch-quotes')
 def api_batch_quotes():
     codes = request.args.get('codes', '600519,000001')
-    tx_codes = ','.join(to_tx_code(c.strip()) for c in codes.split(','))
+    code_list = [c.strip() for c in codes.split(',')]
+    tx_codes = ','.join(to_tx_code(c) for c in code_list)
     raw = curl_get(f'https://qt.gtimg.cn/q={tx_codes}', 'gbk')
     if not raw:
-        return jsonify({'error': 'no_data', 'stocks': []})
+        # 兜底：返回模拟数据
+        mock_all = generate_mock_stocks()
+        mock_filtered = [s for s in mock_all if s['code'] in code_list]
+        return jsonify({'stocks': mock_filtered, 'mock': True})
     stocks = []
     for line in raw.strip().split(';'):
         line = line.strip()
@@ -184,7 +287,9 @@ def api_kline():
     url = f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={tx_code},{url_period},,,{count},qfq&_var=kline_data"
     raw = curl_get(url)
     if not raw:
-        return jsonify({'error': 'no_data', 'klines': [], 'count': 0})
+        # 兜底：返回模拟K线数据
+        mock_klines = get_mock_klines(count)
+        return jsonify({'count': len(mock_klines), 'klines': mock_klines, 'mock': True})
     try:
         json_str = re.sub(r'^kline_data\s*=\s*', '', raw).strip().rstrip(';')
         data = json.loads(json_str)
@@ -193,9 +298,14 @@ def api_kline():
             klines_raw = data.get('data', {}).get(tx_code, {}).get('day', [])
         if not klines_raw:
             klines_raw = data.get('data', {}).get(tx_code, {}).get('qfqday', [])
+        if not klines_raw:
+            # 解析到数据但为空，也返回模拟数据
+            mock_klines = get_mock_klines(count)
+            return jsonify({'count': len(mock_klines), 'klines': mock_klines, 'mock': True})
         return jsonify({'count': len(klines_raw), 'klines': klines_raw})
     except Exception as e:
-        return jsonify({'error': str(e), 'klines': [], 'count': 0})
+        mock_klines = get_mock_klines(count)
+        return jsonify({'error': str(e), 'klines': mock_klines, 'count': len(mock_klines), 'mock': True})
 
 @app.route('/api/technical')
 def api_technical():
@@ -315,20 +425,27 @@ def api_stock_screener():
 
     codes = ','.join(HOT_STOCKS)
     raw = curl_get(f'https://qt.gtimg.cn/q={codes}', 'gbk')
-    if not raw:
-        return jsonify({'total': 0, 'stocks': []})
     stocks = []
-    for line in raw.strip().split(';'):
-        line = line.strip()
-        if not line.startswith('v_'):
-            continue
-        start = line.find('"')
-        end = line.rfind('"')
-        if start < 0 or end <= start:
-            continue
-        s = parse_tx_stock(line[start+1:end])
-        if not s:
-            continue
+    is_mock = False
+    if raw:
+        for line in raw.strip().split(';'):
+            line = line.strip()
+            if not line.startswith('v_'):
+                continue
+            start = line.find('"')
+            end = line.rfind('"')
+            if start < 0 or end <= start:
+                continue
+            s = parse_tx_stock(line[start+1:end])
+            if s:
+                stocks.append(s)
+    if not stocks:
+        # 兜底使用模拟数据
+        is_mock = True
+        stocks = generate_mock_stocks()
+    # 应用筛选条件
+    filtered = []
+    for s in stocks:
         if min_change is not None and s['change_pct'] < min_change:
             continue
         if max_change is not None and s['change_pct'] > max_change:
@@ -341,9 +458,9 @@ def api_stock_screener():
             continue
         if min_pe is not None and s['pe'] < min_pe:
             continue
-        stocks.append(s)
-    stocks.sort(key=lambda x: x['change_pct'], reverse=True)
-    return jsonify({'total': len(stocks), 'stocks': stocks[:20]})
+        filtered.append(s)
+    filtered.sort(key=lambda x: x['change_pct'], reverse=True)
+    return jsonify({'total': len(filtered), 'stocks': filtered[:20], 'mock': is_mock})
 
 @app.route('/api/search')
 def api_search():
@@ -353,7 +470,10 @@ def api_search():
     codes = ','.join(HOT_STOCKS)
     raw = curl_get(f'https://qt.gtimg.cn/q={codes}', 'gbk')
     if not raw:
-        return jsonify({'stocks': []})
+        # 兜底：从模拟数据中搜索
+        mock = generate_mock_stocks()
+        results = [s for s in mock if q in s['name'].lower() or q in s['code']]
+        return jsonify({'stocks': results, 'mock': True})
     results = []
     for line in raw.strip().split(';'):
         line = line.strip()

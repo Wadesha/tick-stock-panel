@@ -245,7 +245,7 @@ const LEVELS = [
       if (!data.top_gainers || data.top_gainers.length === 0) return '<div class="empty"><span class="icon">📭</span>暂无数据</div>';
       // 模拟金叉判断：涨幅>0且换手率>0.3%的视为"趋势向上"
       const goldenCross = data.top_gainers.filter(s => s.change_pct > 0.5 && s.turnover_rate > 0.3);
-      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">✅ 发现 <strong>${goldenCross.length}</strong> 只趋势向上个股</div>`;
+      let html = mockBanner(data.mock) + `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">✅ 发现 <strong>${goldenCross.length}</strong> 只趋势向上个股</div>`;
       if (goldenCross.length > 0) {
         html += `<div class="scroll-x">${renderTable(goldenCross)}</div>`;
         html += `<div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
@@ -350,7 +350,7 @@ const LEVELS = [
         s.score = Math.round(score1 + score2 + score3 + score4);
       });
       stocks.sort((a,b) => b.score - a.score);
-      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📊 多因子综合评分（满分100）</div>`;
+      let html = mockBanner(data.mock) + `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📊 多因子综合评分（满分100）</div>`;
       html += `<table><tr><th>排名</th><th>代码</th><th>名称</th><th>最新价</th><th>涨幅%</th><th>换手率%</th><th>PE</th><th>总市值</th><th style="color:#ffd54f">评分</th></tr>`;
       stocks.forEach((s,i) => {
         const c = s.change_pct >= 0 ? 'up' : 'down';
@@ -377,7 +377,7 @@ const LEVELS = [
       const top = data.top_gainers.slice(0,5);
       const weight = (100 / top.length).toFixed(1);
       let totalReturn = 0;
-      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📁 等权重投资组合（各${weight}%）</div>`;
+      let html = mockBanner(data.mock) + `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📁 等权重投资组合（各${weight}%）</div>`;
       html += `<div class="portfolio-list">`;
       top.forEach(s => {
         totalReturn += s.change_pct;
@@ -433,7 +433,7 @@ for (let i = 11; i <= 19; i++) {
           const stocks = d.top_gainers.slice(0,5);
           const maxDrawdown = Math.max(...stocks.map(s => Math.abs(s.amplitude)));
           const avgVol = stocks.reduce((a,s) => a + s.turnover_rate, 0) / stocks.length;
-          return `<div class="grid-3">
+          return mockBanner(d.mock) + `<div class="grid-3">
             <div class="stat-card"><div class="label">最大振幅(风险)</div><div class="val" style="color:#ef5350;font-size:22px">${maxDrawdown}%</div></div>
             <div class="stat-card"><div class="label">平均换手率</div><div class="val" style="color:#4fc3f7;font-size:22px">${avgVol.toFixed(2)}%</div></div>
             <div class="stat-card"><div class="label">组合风险等级</div><div class="val" style="color:${maxDrawdown>5?'#ef5350':maxDrawdown>3?'#ff9800':'#26a69a'};font-size:22px">${maxDrawdown>5?'高风险':maxDrawdown>3?'中风险':'低风险'}</div></div>
@@ -444,9 +444,9 @@ for (let i = 11; i <= 19; i++) {
           const d = await r.json();
           if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
           const stock = d.top_gainers[0];
-          const atr = stock.amplitude / 14; // 简化ATR计算
+          const atr = stock.amplitude / 14;
           const stopLoss = (stock.price - 2 * atr).toFixed(2);
-          return `<div class="grid-3">
+          return mockBanner(d.mock) + `<div class="grid-3">
             <div class="stat-card"><div class="label">标的</div><div class="val" style="color:#4fc3f7;font-size:18px">${stock.name}</div></div>
             <div class="stat-card"><div class="label">当前价</div><div class="val" style="color:#4fc3f7;font-size:22px">${stock.price}</div></div>
             <div class="stat-card"><div class="label">建议止损位</div><div class="val" style="color:#ef5350;font-size:22px">${stopLoss}</div></div>
@@ -455,7 +455,6 @@ for (let i = 11; i <= 19; i++) {
           </div>`;
         },
         13: async () => {
-          // 假设胜率55%，赔率2:1
           const p = 0.55, b = 2, q = 1-p;
           const f = ((b*p - q) / b * 100).toFixed(1);
           return `<div class="grid-3">
@@ -471,7 +470,7 @@ for (let i = 11; i <= 19; i++) {
           const d = await r.json();
           if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
           const stocks = d.top_gainers.filter(s => s.change_pct > 1 && s.turnover_rate > 0.5);
-          return `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📊 趋势跟踪信号：找到 ${stocks.length} 只多头趋势股</div>
+          return mockBanner(d.mock) + `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📊 趋势跟踪信号：找到 ${stocks.length} 只多头趋势股</div>
           <div class="scroll-x">${renderTable(stocks)}</div>
           <div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
             💡 趋势跟踪规则：MA5>MA10>MA20为多头排列，以上个股处于多头趋势中。
@@ -482,7 +481,7 @@ for (let i = 11; i <= 19; i++) {
           const d = await r.json();
           if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
           const oversold = d.top_losers.filter(s => s.change_pct < -2 && s.pe > 0 && s.total_mv > 200);
-          return `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">🔄 发现 ${oversold.length} 只超卖标的</div>
+          return mockBanner(d.mock) + `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">🔄 发现 ${oversold.length} 只超卖标的</div>
           ${oversold.length > 0 ? '<div class="scroll-x">'+renderTable(oversold)+'</div>' : '<div class="empty">暂无符合条件的超卖标的</div>'}
           <div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
             💡 均值回归策略：超卖后等待RSI<30或出现止跌K线信号时介入，止损设在前低下方。
@@ -501,7 +500,7 @@ for (let i = 11; i <= 19; i++) {
             sectors[sec].totalChange += s.change_pct;
             sectors[sec].stocks.push(s.name);
           });
-          let html = '<div class="grid-3">';
+          let html = mockBanner(d.mock) + '<div class="grid-3">';
           Object.entries(sectors).forEach(([name, data]) => {
             const avg = (data.totalChange / data.count).toFixed(2);
             html += `<div class="stat-card"><div class="label">${name}板块</div><div class="val ${avg>0?'up':'down'}" style="font-size:20px">${avg}%</div><div style="font-size:12px;color:#556688">${data.stocks.join('、')}</div></div>`;
@@ -514,7 +513,7 @@ for (let i = 11; i <= 19; i++) {
           const r = await fetch(API + `/technical?code=${code}`);
           const d = await r.json();
           if (!d || d.error) return '<div class="empty">数据不足，无法回测</div>';
-          return `<div class="panel"><div class="panel-hd">⏱️ 贵州茅台 60日回测结果</div><div class="panel-bd">
+          return (d.mock ? mockBanner(true) : '') + `<div class="panel"><div class="panel-hd">⏱️ 贵州茅台 60日回测结果</div><div class="panel-bd">
             <div class="grid-3">
               <div class="stat-card"><div class="label">最新价</div><div class="val" style="color:#4fc3f7;font-size:22px">${d.latest_price}</div></div>
               <div class="stat-card"><div class="label">MA5/MA10</div><div class="val" style="color:#4fc3f7;font-size:18px">${d.ma5}/${d.ma10}</div></div>
@@ -530,7 +529,7 @@ for (let i = 11; i <= 19; i++) {
           const d = await r.json();
           if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
           const stocks = d.top_gainers.slice(0,5);
-          let html = '<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">💼 模拟交易面板</div>';
+          let html = mockBanner(d.mock) + '<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">💼 模拟交易面板</div>';
           html += `<div class="grid-2">`;
           stocks.forEach(s => {
             const qty = Math.floor(100000 / s.price / 100) * 100; // 10万买多少手
@@ -568,6 +567,12 @@ for (let i = 11; i <= 19; i++) {
       }
     }
   });
+}
+
+// ====== 模拟数据提示 ======
+function mockBanner(isMock) {
+  if (!isMock) return '';
+  return '<div style="background:#ff980022;border:1px solid #ff980044;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#ffd54f;display:flex;align-items:center;gap:8px">⚠️ 当前为 <strong>模拟数据</strong>（API不可用或非交易时段），仅供参考学习</div>';
 }
 
 // ====== 工具函数 ======
@@ -675,6 +680,10 @@ async function executeLevel(id) {
       const res = await fetch(url);
       const data = await res.json();
       html = l.render ? l.render(data) : '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+      // 检测模拟数据标识
+      if (data && data.mock) {
+        html = mockBanner(true) + html;
+      }
     } else if (l.autoAction && l.execute) {
       html = await l.execute();
     }
