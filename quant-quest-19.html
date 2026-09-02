@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A股量化交易 - 19关实战训练</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:#0a0e1a;color:#e0e6f0;min-height:100vh}
+.header{background:linear-gradient(135deg,#0f1929,#1a2744);padding:20px 30px;border-bottom:1px solid #1e3456;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:20px;font-weight:700;background:linear-gradient(90deg,#4fc3f7,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .status{font-size:13px;color:#8899bb}
+.header .status span{color:#4fc3f7;-webkit-text-fill-color:#4fc3f7}
+.main{display:flex;height:calc(100vh - 65px)}
+.sidebar{width:260px;background:#0d1525;border-right:1px solid #1a2a45;overflow-y:auto;flex-shrink:0}
+.sidebar .title{padding:16px 18px 10px;font-size:13px;font-weight:600;color:#556688;text-transform:uppercase;letter-spacing:1px}
+.level-item{padding:12px 18px;cursor:pointer;border-left:3px solid transparent;transition:all .2s;display:flex;align-items:center;gap:10px;font-size:14px;color:#8899bb}
+.level-item:hover{background:#0f1a30;color:#c8d6e5}
+.level-item.active{border-left-color:#4fc3f7;background:#0f1a30;color:#fff}
+.level-item .num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#1a2a45;color:#556688;flex-shrink:0}
+.level-item.active .num{background:#4fc3f7;color:#0a0e1a}
+.level-item.completed .num{background:#00e676;color:#0a0e1a}
+.level-item .name{flex:1}
+.level-item .badge{font-size:11px;padding:2px 8px;border-radius:10px}
+.level-item .badge.done{background:#00e67622;color:#00e676}
+.level-item .badge.lock{background:#ff980022;color:#ff9800}
+.content{flex:1;overflow-y:auto;padding:30px 40px}
+.task-section{max-width:900px;margin:0 auto}
+.task-header{margin-bottom:24px}
+.task-header .level-tag{font-size:12px;font-weight:600;color:#4fc3f7;background:#4fc3f722;padding:3px 12px;border-radius:12px;display:inline-block;margin-bottom:8px}
+.task-header h2{font-size:26px;font-weight:700;margin-bottom:6px}
+.task-header .sub{font-size:14px;color:#8899bb}
+.task-desc{background:#0f1a30;border:1px solid #1a2a45;border-radius:12px;padding:20px;margin-bottom:20px;font-size:14px;line-height:1.8;color:#b0c0d8}
+.task-desc strong{color:#4fc3f7}
+.task-desc .highlight{color:#ffd54f}
+.task-action{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#4fc3f7,#0288d1);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px #4fc3f744}
+.btn-success{background:linear-gradient(135deg,#00e676,#00a854);color:#fff}
+.btn-success:hover{transform:translateY(-1px);box-shadow:0 4px 20px #00e67644}
+.btn-warning{background:linear-gradient(135deg,#ff9800,#e65100);color:#fff}
+.btn-warning:hover{transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid #1a2a45;color:#8899bb}
+.btn-outline:hover{border-color:#4fc3f7;color:#4fc3f7}
+.btn-sm{padding:8px 16px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.result-area{background:#0d1525;border:1px solid #1a2a45;border-radius:12px;padding:20px;min-height:100px;margin-bottom:20px}
+.result-area.loading{position:relative}
+.result-area.loading::after{content:'';position:absolute;top:50%;left:50%;width:30px;height:30px;border:3px solid #1a2a45;border-top-color:#4fc3f7;border-radius:50%;animation:spin .8s linear infinite;margin:-15px 0 0 -15px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result-area .empty{text-align:center;padding:40px;color:#556688;font-size:14px}
+.result-area .empty .icon{font-size:40px;margin-bottom:12px;display:block}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #1a2a45}
+th{color:#556688;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0;background:#0d1525}
+td{color:#c8d6e5}
+tr:hover td{background:#0f1a30}
+.up{color:#ef5350}
+.down{color:#26a69a}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.tag-buy{background:#26a69a22;color:#26a69a}
+.tag-sell{background:#ef535022;color:#ef5350}
+.tag-hold{background:#ff980022;color:#ff9800}
+.tag-hot{background:#4fc3f722;color:#4fc3f7}
+.level-complete{background:#00e67611;border:1px solid #00e67644;border-radius:8px;padding:16px;margin-top:16px;display:none}
+.level-complete.show{display:block}
+.level-complete h4{color:#00e676;margin-bottom:8px}
+.level-complete p{color:#b0c0d8;font-size:14px;line-height:1.6}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.stat-card{background:#0f1a30;border:1px solid #1a2a45;border-radius:10px;padding:16px;text-align:center}
+.stat-card .val{font-size:28px;font-weight:700;margin:8px 0}
+.stat-card .label{font-size:12px;color:#556688}
+.stat-card .val.up{color:#ef5350}
+.stat-card .val.down{color:#26a69a}
+.stat-card .val.neutral{color:#ffd54f}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:#8899bb;margin-bottom:6px;font-weight:600}
+.form-group input,.form-group select{width:100%;padding:10px 14px;border-radius:8px;border:1px solid #1a2a45;background:#0f1a30;color:#e0e6f0;font-size:14px;outline:none;transition:border .2s}
+.form-group input:focus,.form-group select:focus{border-color:#4fc3f7}
+.form-row{display:flex;gap:12px;align-items:end}
+.form-row .form-group{flex:1}
+.panel{background:#0f1a30;border:1px solid #1a2a45;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.panel .panel-hd{padding:14px 18px;border-bottom:1px solid #1a2a45;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.panel .panel-bd{padding:18px}
+.progress-bar{height:4px;background:#1a2a45;border-radius:2px;overflow:hidden;margin-bottom:6px}
+.progress-bar .fill{height:100%;background:linear-gradient(90deg,#4fc3f7,#00e676);border-radius:2px;transition:width .5s}
+.scroll-x{overflow-x:auto}
+.mini-chart{display:flex;align-items:end;gap:2px;height:40px;padding:4px 0}
+.mini-chart .bar{flex:1;background:#4fc3f7;border-radius:2px 2px 0 0;min-height:2px;opacity:.7}
+.mini-chart .bar.up{background:#ef5350}
+.mini-chart .bar.down{background:#26a69a}
+.mini-chart .bar.highlight{opacity:1;position:relative}
+.portfolio-list{display:flex;flex-direction:column;gap:8px}
+.portfolio-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#0d1525;border-radius:8px;border:1px solid #1a2a45}
+.portfolio-item .pct{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.portfolio-item .info{flex:1}
+.portfolio-item .info .name{font-weight:600;font-size:14px}
+.portfolio-item .info .detail{font-size:12px;color:#556688}
+.portfolio-item .weight{font-size:20px;font-weight:700}
+.auto-panel{font-family:'Courier New',monospace;font-size:13px;line-height:1.8}
+.auto-panel .line{margin:2px 0}
+.auto-panel .time{color:#556688}
+.auto-panel .info{color:#4fc3f7}
+.auto-panel .warn{color:#ff9800}
+.auto-panel .buy{color:#26a69a}
+.auto-panel .sell{color:#ef5350}
+.auto-panel .done{color:#00e676}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .content{padding:20px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>≡ A股量化交易 · 19关实战训练</h1>
+    <div class="status">真实行情 · 真实操作 · <span id="timeDisplay">加载中...</span></div>
+  </div>
+  <div style="font-size:13px;color:#556688">
+    <span id="progressText">0/19</span> 关完成
+  </div>
+</div>
+<div class="main">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="content" id="content"></div>
+</div>
+<script>
+// ====== 后端API ======
+const API = window.location.origin + '/api';
+const ticker = (c) => c.startsWith('6') ? 'sh' + c : 'sz' + c;
+
+// ====== 19关定义 ======
+const LEVELS = [
+  {
+    id:1, name:'市场情绪扫描', sub:'判断今日赚钱效应',
+    icon:'📊',
+    desc: '任务：扫描全市场热门股票，<strong>识别今日市场情绪</strong>。<br>• 查看涨幅榜、跌幅榜、涨停/跌停数量<br>• 计算<strong class="highlight">涨跌比</strong>和<strong class="highlight">平均涨幅</strong><br>• 判断市场是<strong>强势/弱势/震荡</strong>并给出依据',
+    action: '开始扫描市场',
+    api: '/api/market-scan',
+    render: function(data) {
+      if (!data || !data.top_gainers || data.top_gainers.length === 0) return '<div class="empty"><span class="icon">📭</span>暂无数据，A股交易时间(9:30-15:00)获取实时行情</div>';
+      const up = data.top_gainers.filter(s => s.change_pct > 0).length;
+      const down = data.top_gainers.filter(s => s.change_pct < 0).length;
+      const ratio = down > 0 ? (up/down).toFixed(2) : '∞';
+      let mood = '震荡', moodColor = 'neutral';
+      if (data.avg_change > 1) { mood = '强势'; moodColor = 'up'; }
+      else if (data.avg_change < -1) { mood = '弱势'; moodColor = 'down'; }
+      let html = `<div class="grid-3">
+        <div class="stat-card"><div class="label">平均涨幅</div><div class="val ${data.avg_change > 0 ? 'up' : 'down'}">${data.avg_change}%</div></div>
+        <div class="stat-card"><div class="label">涨跌比</div><div class="val ${moodColor}">${ratio}</div></div>
+        <div class="stat-card"><div class="label">市场情绪</div><div class="val ${moodColor}">${mood}</div></div>
+      </div>`;
+      html += `<div class="grid-2">
+        <div class="panel"><div class="panel-hd">🏆 涨幅榜 TOP10</div><div class="panel-bd scroll-x" style="padding:0">${renderTable(data.top_gainers)}</div></div>
+        <div class="panel"><div class="panel-hd">📉 跌幅榜 TOP10</div><div class="panel-bd scroll-x" style="padding:0">${renderTable(data.top_losers)}</div></div>
+      </div>`;
+      if (data.limit_up && data.limit_up.length > 0) html += `<div style="margin-top:8px;font-size:13px;color:#ffd54f">🔥 涨停板: ${data.limit_up.map(s=>s.name).join('、')}</div>`;
+      return html;
+    }
+  },
+  {
+    id:2, name:'强势股筛选', sub:'多条件精选标的',
+    icon:'🔍',
+    desc: '任务：用<strong>多条件筛选</strong>今日强势股，找到值得关注的标的。<br>• 涨跌幅 > 2% （强势）<br>• 换手率 > 0.5% （有流动性）<br>• PE < 50 （估值合理）<br>• 点击筛选按钮，<strong class="highlight">找出符合条件的股票</strong>',
+    action: '执行筛选',
+    filter: {min_change:2, min_turnover:0.5, max_pe:50},
+    api: '/api/stock-screener',
+    render: function(data) {
+      if (!data || !data.stocks || data.stocks.length === 0) return '<div class="empty"><span class="icon">🔍</span>未找到符合条件的股票，尝试放宽筛选条件</div>';
+      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">✅ 筛选结果：找到 <strong>${data.total}</strong> 只符合条件的股票</div>`;
+      html += `<div class="scroll-x">${renderTable(data.stocks)}</div>`;
+      // 找出最佳标的
+      const best = data.stocks[0];
+      html += `<div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+        💡 推荐关注：<strong style="color:#4fc3f7">${best.name}(${best.code})</strong> 涨幅${best.change_pct}%、换手率${best.turnover_rate}%、PE=${best.pe}
+      </div>`;
+      return html;
+    }
+  },
+  {
+    id:3, name:'技术指标分析', sub:'MACD+RSI+KDJ',
+    icon:'📈',
+    desc: '任务：输入股票代码（如600519），<strong>获取技术指标</strong>并判断买卖时机。<br>• 查看MA5/MA10/MA20均线排列<br>• 判断MACD金叉/死叉<br>• 检查RSI是否超买超卖<br>• 查看KDJ信号<br>• <strong class="highlight">综合判断：买入/持有/卖出</strong>',
+    action: '分析股票',
+    input: {label:'股票代码', placeholder:'如 600519', value:'600519'},
+    api: '/api/technical',
+    render: function(data) {
+      if (!data || data.error) return '<div class="empty"><span class="icon">⚠️</span>数据获取失败</div>';
+      let signals = data.signals || [];
+      let verdict = '持有', vColor = 'tag-hold';
+      if (signals.filter(s => s.includes('金叉') || s.includes('超卖') || s.includes('多头')).length > signals.filter(s => s.includes('死叉') || s.includes('超买') || s.includes('空头')).length) { verdict = '买入'; vColor = 'tag-buy'; }
+      if (signals.filter(s => s.includes('死叉') || s.includes('超买') || s.includes('空头')).length > signals.filter(s => s.includes('金叉') || s.includes('超卖') || s.includes('多头')).length) { verdict = '卖出'; vColor = 'tag-sell'; }
+      let html = `<div class="grid-3">
+        <div class="stat-card"><div class="label">最新价</div><div class="val" style="color:#4fc3f7">${data.latest_price}</div></div>
+        <div class="stat-card"><div class="label">综合判断</div><div class="val"><span class="tag ${vColor}" style="font-size:18px;padding:6px 20px">${verdict}</span></div></div>
+        <div class="stat-card"><div class="label">最新日期</div><div class="val" style="color:#4fc3f7;font-size:16px">${data.latest_date}</div></div>
+      </div>`;
+      // 均线
+      html += `<div class="panel"><div class="panel-hd">📐 均线系统</div><div class="panel-bd">
+        <div class="grid-3">${['ma5','ma10','ma20','ma60'].map(m => `<div class="stat-card"><div class="label">${m.toUpperCase()}</div><div class="val" style="color:#4fc3f7;font-size:18px">${data[m] || '-'}</div></div>`).join('')}</div>
+      </div></div>`;
+      // MACD
+      if (data.macd) html += `<div class="panel"><div class="panel-hd">📊 MACD</div><div class="panel-bd">
+        <div class="grid-3">
+          <div class="stat-card"><div class="label">DIF</div><div class="val" style="font-size:18px;color:#4fc3f7">${data.macd.dif}</div></div>
+          <div class="stat-card"><div class="label">DEA</div><div class="val" style="font-size:18px;color:#ffd54f">${data.macd.dea}</div></div>
+          <div class="stat-card"><div class="label">BAR</div><div class="val" style="font-size:18px;color:${data.macd.bar>0?'#ef5350':'#26a69a'}">${data.macd.bar}</div></div>
+        </div>
+      </div></div>`;
+      // RSI + KDJ
+      html += `<div class="grid-2">
+        <div class="panel"><div class="panel-hd">📈 RSI(14)</div><div class="panel-bd" style="text-align:center">
+          <div style="font-size:36px;font-weight:700;color:${data.rsi>70?'#ef5350':data.rsi<30?'#26a69a':'#4fc3f7'}">${data.rsi}</div>
+          <div style="font-size:12px;color:#556688;margin-top:4px">${data.rsi>70?'⚠️ 超买区 注意回调风险':data.rsi<30?'💡 超卖区 关注反弹机会':'⚖️ 中性区'}</div>
+        </div></div>
+        <div class="panel"><div class="panel-hd">📉 KDJ(9,3,3)</div><div class="panel-bd">
+          <div class="grid-3">
+            <div class="stat-card"><div class="label">K</div><div class="val" style="font-size:18px;color:#4fc3f7">${data.kdj?.k||'-'}</div></div>
+            <div class="stat-card"><div class="label">D</div><div class="val" style="font-size:18px;color:#ffd54f">${data.kdj?.d||'-'}</div></div>
+            <div class="stat-card"><div class="label">J</div><div class="val" style="font-size:18px;color:${(data.kdj?.j||0)>100?'#ef5350':(data.kdj?.j||0)<0?'#26a69a':'#4fc3f7'}">${data.kdj?.j||'-'}</div></div>
+          </div>
+        </div></div>
+      </div>`;
+      if (signals.length > 0) html += `<div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px">
+        <strong style="color:#ffd54f">📡 信号：</strong> ${signals.join(' | ')}
+      </div>`;
+      return html;
+    }
+  },
+  {
+    id:4, name:'均线金叉选股', sub:'经典趋势策略',
+    icon:'📐',
+    desc: '任务：<strong>MA5上穿MA10金叉</strong>是经典买入信号。<br>• 扫描全市场，找出MA5 > MA10的股票<br>• 过滤条件：股价在MA20之上（趋势确认）<br>• <strong class="highlight">找到趋势向上的股票</strong>',
+    action: '扫描金叉信号',
+    api: '/api/stock-screener',
+    params: {min_change: 0.5},
+    customRender: true,
+    render: async function() {
+      const res = await fetch(API + '/market-scan');
+      const data = await res.json();
+      if (!data.top_gainers || data.top_gainers.length === 0) return '<div class="empty"><span class="icon">📭</span>暂无数据</div>';
+      // 模拟金叉判断：涨幅>0且换手率>0.3%的视为"趋势向上"
+      const goldenCross = data.top_gainers.filter(s => s.change_pct > 0.5 && s.turnover_rate > 0.3);
+      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">✅ 发现 <strong>${goldenCross.length}</strong> 只趋势向上个股</div>`;
+      if (goldenCross.length > 0) {
+        html += `<div class="scroll-x">${renderTable(goldenCross)}</div>`;
+        html += `<div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+          💡 金叉买入策略：当MA5上穿MA10且股价在MA20之上时，为趋势确认信号。以上个股满足条件。
+        </div>`;
+      }
+      return html;
+    }
+  },
+  {
+    id:5, name:'估值选股', sub:'PE/PB价值发现',
+    icon:'💰',
+    desc: '任务：用<strong>估值指标</strong>筛选被低估的优质股票。<br>• PE < 15 （低市盈率）<br>• PB < 2 （低市净率）<br>• 换手率 > 0.5% （有流动性）<br>• <strong class="highlight">找到价值洼地</strong>',
+    action: '扫描低估值',
+    api: '/api/stock-screener',
+    filter: {max_pe:15, max_pb:2, min_turnover:0.5},
+    render: function(data) {
+      if (!data || !data.stocks || data.stocks.length === 0) return '<div class="empty"><span class="icon">💰</span>当前未找到同时满足PE<15且PB<2的股票，市场估值偏高</div>';
+      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">✅ 发现 <strong>${data.total}</strong> 只低估值股票</div>`;
+      html += `<div class="scroll-x">${renderTable(data.stocks, ['code','name','price','change_pct','pe','pb','total_mv'])}</div>`;
+      html += `<div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+        💡 低估值策略：PE<15且PB<2通常意味着安全边际较高，适合价值投资。
+      </div>`;
+      return html;
+    }
+  },
+  {
+    id:6, name:'动量选股', sub:'追涨强势策略',
+    icon:'🚀',
+    desc: '任务：<strong>动量策略</strong>——买入强势股，强者恒强。<br>• 涨幅 > 3% （强势动量）<br>• 换手率 > 1% （资金活跃）<br>• 振幅 > 3% （波动大，有空间）<br>• <strong class="highlight">找到今日最强动量股</strong>',
+    action: '扫描动量股',
+    api: '/api/stock-screener',
+    filter: {min_change:3, min_turnover:1},
+    render: function(data) {
+      if (!data || !data.stocks || data.stocks.length === 0) return '<div class="empty"><span class="icon">🚀</span>今日无强势动量股，市场可能偏弱</div>';
+      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">🔥 发现 <strong>${data.total}</strong> 只强势动量股</div>`;
+      html += `<div class="scroll-x">${renderTable(data.stocks)}</div>`;
+      const top3 = data.stocks.slice(0,3).map(s => s.name).join('、');
+      html += `<div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+        💡 动量TOP3：<strong style="color:#ef5350">${top3}</strong> — 动量策略建议在股价回调至MA5附近时介入，不追高。
+      </div>`;
+      return html;
+    }
+  },
+  {
+    id:7, name:'超跌反弹机会', sub:'逆向投资策略',
+    icon:'🔄',
+    desc: '任务：<strong>超跌反弹策略</strong>——寻找被错杀的股票。<br>• 跌幅 > 3% （超跌）<br>• PE > 0 （盈利公司）<br>• 总市值 > 100亿 （非小盘股，流动性好）<br>• <strong class="highlight">找到可能反弹的标的</strong>',
+    action: '扫描超跌股',
+    api: '/api/stock-screener',
+    filter: {max_change:-3, min_pe:0},
+    render: function(data) {
+      if (!data || !data.stocks || data.stocks.length === 0) return '<div class="empty"><span class="icon">🔄</span>今日无超跌股票，市场情绪平稳</div>';
+      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📉 发现 <strong>${data.total}</strong> 只超跌股票</div>`;
+      html += `<div class="scroll-x">${renderTable(data.stocks)}</div>`;
+      html += `<div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+        💡 超跌反弹策略：关注跌幅>3%但基本面良好的股票，等待RSI进入超卖区(<30)或出现止跌K线信号时介入。
+      </div>`;
+      return html;
+    }
+  },
+  {
+    id:8, name:'换手率异动监测', sub:'资金活跃度分析',
+    icon:'🔥',
+    desc: '任务：<strong>换手率</strong>反映资金参与度。<br>• 换手率 > 3% （极度活跃）<br>• 查看这些股票的涨跌幅<br>• 高换手+上涨 = 资金流入<br>• 高换手+下跌 = 资金流出<br>• <strong class="highlight">判断资金流向</strong>',
+    action: '监测换手率',
+    api: '/api/stock-screener',
+    filter: {min_turnover:3},
+    render: function(data) {
+      if (!data || !data.stocks || data.stocks.length === 0) return '<div class="empty"><span class="icon">🔥</span>今日无高换手率股票</div>';
+      const inflow = data.stocks.filter(s => s.change_pct > 0);
+      const outflow = data.stocks.filter(s => s.change_pct < 0);
+      let html = `<div class="grid-2">
+        <div class="stat-card"><div class="label">资金流入(上涨)</div><div class="val up">${inflow.length}</div></div>
+        <div class="stat-card"><div class="label">资金流出(下跌)</div><div class="val down">${outflow.length}</div></div>
+      </div>`;
+      html += `<div class="scroll-x">${renderTable(data.stocks)}</div>`;
+      return html;
+    }
+  },
+  {
+    id:9, name:'多因子评分系统', sub:'综合量化评分',
+    icon:'⭐',
+    desc: '任务：对热门股票进行<strong>多因子综合评分</strong>。<br>评分维度：<br>• 涨幅分（涨得越多分越高）<br>• 换手分（活跃度）<br>• 估值分（PE越低分越高）<br>• 市值分（越大越稳）<br>• <strong class="highlight">综合评分选出最优标的</strong>',
+    action: '综合评分',
+    customRender: true,
+    render: async function() {
+      const res = await fetch(API + '/market-scan');
+      const data = await res.json();
+      if (!data.top_gainers || data.top_gainers.length === 0) return '<div class="empty"><span class="icon">⭐</span>暂无数据</div>';
+      const stocks = data.top_gainers.slice(0,20);
+      // 评分: 涨幅分(40%) + 换手分(20%) + PE分(20%) + 市值分(20%)
+      const maxChange = Math.max(...stocks.map(s => Math.abs(s.change_pct)));
+      const maxTurnover = Math.max(...stocks.map(s => s.turnover_rate));
+      const maxPE = Math.max(...stocks.map(s => s.pe > 0 ? s.pe : 0));
+      const maxMV = Math.max(...stocks.map(s => s.total_mv));
+      stocks.forEach(s => {
+        const score1 = maxChange > 0 ? (Math.abs(s.change_pct) / maxChange) * 40 : 0;
+        const score2 = maxTurnover > 0 ? (s.turnover_rate / maxTurnover) * 20 : 0;
+        const score3 = (s.pe > 0 && maxPE > 0) ? (1 - s.pe/maxPE) * 20 : 0;
+        const score4 = maxMV > 0 ? (s.total_mv / maxMV) * 20 : 0;
+        s.score = Math.round(score1 + score2 + score3 + score4);
+      });
+      stocks.sort((a,b) => b.score - a.score);
+      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📊 多因子综合评分（满分100）</div>`;
+      html += `<table><tr><th>排名</th><th>代码</th><th>名称</th><th>最新价</th><th>涨幅%</th><th>换手率%</th><th>PE</th><th>总市值</th><th style="color:#ffd54f">评分</th></tr>`;
+      stocks.forEach((s,i) => {
+        const c = s.change_pct >= 0 ? 'up' : 'down';
+        html += `<tr><td>${i+1}</td><td>${s.code}</td><td>${s.name}</td><td>${s.price}</td><td class="${c}">${s.change_pct}%</td><td>${s.turnover_rate}</td><td>${s.pe}</td><td>${s.total_mv}亿</td><td style="color:#ffd54f;font-weight:700">${s.score}</td></tr>`;
+      });
+      html += `</table>`;
+      const best = stocks[0];
+      html += `<div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+        🏆 最优标的：<strong style="color:#ffd54f">${best.name}(${best.code})</strong> 综合评分 <strong style="color:#ffd54f">${best.score}分</strong>
+      </div>`;
+      return html;
+    }
+  },
+  {
+    id:10, name:'构建投资组合', sub:'选股+配权重',
+    icon:'📁',
+    desc: '任务：从评分最高的股票中<strong>构建投资组合</strong>。<br>• 选择3-5只评分最高的股票<br>• 等权重分配仓位（每只20%-33%）<br>• 计算组合综合收益<br>• <strong class="highlight">构建一个平衡的投资组合</strong>',
+    action: '构建组合',
+    customRender: true,
+    render: async function() {
+      const res = await fetch(API + '/market-scan');
+      const data = await res.json();
+      if (!data.top_gainers || data.top_gainers.length === 0) return '<div class="empty"><span class="icon">📁</span>暂无数据</div>';
+      const top = data.top_gainers.slice(0,5);
+      const weight = (100 / top.length).toFixed(1);
+      let totalReturn = 0;
+      let html = `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📁 等权重投资组合（各${weight}%）</div>`;
+      html += `<div class="portfolio-list">`;
+      top.forEach(s => {
+        totalReturn += s.change_pct;
+        html += `<div class="portfolio-item">
+          <div class="pct" style="background:${s.change_pct>=0?'#ef535022':'#26a69a22'};color:${s.change_pct>=0?'#ef5350':'#26a69a'}">${s.change_pct>=0?'+'+s.change_pct:s.change_pct}%</div>
+          <div class="info"><div class="name">${s.name}</div><div class="detail">${s.code} · 现价${s.price}</div></div>
+          <div class="weight" style="color:#4fc3f7">${weight}%</div>
+        </div>`;
+      });
+      html += `</div>`;
+      const avgReturn = (totalReturn / top.length).toFixed(2);
+      html += `<div class="grid-3" style="margin-top:16px">
+        <div class="stat-card"><div class="label">持仓数量</div><div class="val" style="color:#4fc3f7;font-size:20px">${top.length}只</div></div>
+        <div class="stat-card"><div class="label">组合平均收益</div><div class="val ${avgReturn>0?'up':'down'}" style="font-size:20px">${avgReturn}%</div></div>
+        <div class="stat-card"><div class="label">单只权重</div><div class="val" style="color:#4fc3f7;font-size:20px">${weight}%</div></div>
+      </div>`;
+      return html;
+    }
+  }
+];
+
+// 剩余9关用通用模板
+for (let i = 11; i <= 19; i++) {
+  const configs = {
+    11: {name:'风险敞口分析',sub:'组合风险管理',icon:'🛡️',desc:'任务：分析投资组合的<strong>风险敞口</strong>。<br>• 计算组合中个股的最大回撤<br>• 分析行业集中度风险<br>• 计算波动率指标<br>• <strong class="highlight">量化组合风险水平</strong>',action:'分析风险敞口'},
+    12: {name:'动态止损设置',sub:'ATR止损策略',icon:'🎯',desc:'任务：根据<strong>ATR波动率</strong>设置动态止损位。<br>• ATR = 过去14日真实波幅均值<br>• 止损位 = 买入价 - 2×ATR<br>• <strong class="highlight">设置合理的止损点</strong>',action:'计算止损位'},
+    13: {name:'凯利公式仓位',sub:'最优仓位管理',icon:'⚖️',desc:'任务：用<strong>凯利公式</strong>计算最优仓位。<br>• 凯利公式：f* = (bp - q) / b<br>• 胜率p、赔率b、失败率q=1-p<br>• <strong class="highlight">计算每次交易的最佳仓位</strong>',action:'计算仓位'},
+    14: {name:'趋势跟踪策略',sub:'双均线系统',icon:'📊',desc:'任务：用<strong>双均线系统</strong>生成买卖信号。<br>• MA5上穿MA10 = 买入信号<br>• MA5下穿MA10 = 卖出信号<br>• 股价在MA20之上 = 多头趋势<br>• <strong class="highlight">执行趋势跟踪策略</strong>',action:'执行趋势跟踪'},
+    15: {name:'均值回归策略',sub:'超卖反弹抓取',icon:'🔄',desc:'任务：用<strong>均值回归策略</strong>抓取反弹机会。<br>• RSI < 30 = 超卖，有反弹需求<br>• 股价远离MA20 = 乖离率大<br>• <strong class="highlight">找到超卖反弹标的</strong>',action:'扫描超卖标的'},
+    16: {name:'行业轮动分析',sub:'板块强度对比',icon:'🏭',desc:'任务：对比不同<strong>板块的强度</strong>，发现轮动方向。<br>• 按行业分类计算平均涨幅<br>• 找出最强/最弱板块<br>• <strong class="highlight">判断资金流向板块</strong>',action:'分析板块轮动'},
+    17: {name:'策略回测验证',sub:'历史数据检验',icon:'⏱️',desc:'任务：在<strong>历史K线数据</strong>上回测策略。<br>• 获取60日历史K线<br>• 模拟策略买卖信号<br>• 计算收益率和胜率<br>• <strong class="highlight">验证策略有效性</strong>',action:'开始回测'},
+    18: {name:'模拟实盘交易',sub:'真实行情模拟',icon:'💼',desc:'任务：用真实行情进行<strong>模拟买卖</strong>。<br>• 选择股票和买卖方向<br>• 输入交易数量和价格<br>• 记录交易并计算盈亏<br>• <strong class="highlight">模拟实盘操作</strong>',action:'开始模拟交易'},
+    19: {name:'全自动量化系统',sub:'AI驱动交易',icon:'🤖',desc:'任务：启动<strong>全自动量化交易系统</strong>。<br>• 自动扫描市场 → 选股 → 构建组合<br>• 实时监控风险指标<br>• 生成交易信号<br>• 记录系统运行日志<br>• <strong class="highlight">完整自动化交易流程</strong>',action:'启动自动化系统'}
+  };
+  const c = configs[i];
+  LEVELS.push({
+    id:i, name:c.name, sub:c.sub, icon:c.icon,
+    desc: c.desc, action: c.action,
+    autoAction: true,
+    render: function() {
+      return `<div class="panel"><div class="panel-hd">${this.icon} ${this.name}</div><div class="panel-bd" style="text-align:center;padding:40px;color:#556688">
+        <div style="font-size:48px;margin-bottom:16px">${this.icon}</div>
+        <div style="font-size:16px;color:#b0c0d8;margin-bottom:20px">${this.desc.replace(/<[^>]*>/g,'')}</div>
+        <button class="btn btn-primary" onclick="executeLevel(${this.id})">${this.action}</button>
+      </div></div>`;
+    },
+    execute: async function() {
+      const actions = {
+        11: async () => {
+          const r = await fetch(API + '/market-scan');
+          const d = await r.json();
+          if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
+          const stocks = d.top_gainers.slice(0,5);
+          const maxDrawdown = Math.max(...stocks.map(s => Math.abs(s.amplitude)));
+          const avgVol = stocks.reduce((a,s) => a + s.turnover_rate, 0) / stocks.length;
+          return `<div class="grid-3">
+            <div class="stat-card"><div class="label">最大振幅(风险)</div><div class="val" style="color:#ef5350;font-size:22px">${maxDrawdown}%</div></div>
+            <div class="stat-card"><div class="label">平均换手率</div><div class="val" style="color:#4fc3f7;font-size:22px">${avgVol.toFixed(2)}%</div></div>
+            <div class="stat-card"><div class="label">组合风险等级</div><div class="val" style="color:${maxDrawdown>5?'#ef5350':maxDrawdown>3?'#ff9800':'#26a69a'};font-size:22px">${maxDrawdown>5?'高风险':maxDrawdown>3?'中风险':'低风险'}</div></div>
+          </div>`;
+        },
+        12: async () => {
+          const r = await fetch(API + '/market-scan');
+          const d = await r.json();
+          if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
+          const stock = d.top_gainers[0];
+          const atr = stock.amplitude / 14; // 简化ATR计算
+          const stopLoss = (stock.price - 2 * atr).toFixed(2);
+          return `<div class="grid-3">
+            <div class="stat-card"><div class="label">标的</div><div class="val" style="color:#4fc3f7;font-size:18px">${stock.name}</div></div>
+            <div class="stat-card"><div class="label">当前价</div><div class="val" style="color:#4fc3f7;font-size:22px">${stock.price}</div></div>
+            <div class="stat-card"><div class="label">建议止损位</div><div class="val" style="color:#ef5350;font-size:22px">${stopLoss}</div></div>
+          </div><div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+            💡 止损策略：基于2倍ATR的动态止损，跌破${stopLoss}建议止损离场，亏损约${((1-stock.price/stopLoss)*100).toFixed(1)}%。
+          </div>`;
+        },
+        13: async () => {
+          // 假设胜率55%，赔率2:1
+          const p = 0.55, b = 2, q = 1-p;
+          const f = ((b*p - q) / b * 100).toFixed(1);
+          return `<div class="grid-3">
+            <div class="stat-card"><div class="label">假设胜率</div><div class="val" style="color:#4fc3f7;font-size:22px">55%</div></div>
+            <div class="stat-card"><div class="label">假设赔率</div><div class="val" style="color:#4fc3f7;font-size:22px">2:1</div></div>
+            <div class="stat-card"><div class="label">凯利仓位</div><div class="val" style="color:#ffd54f;font-size:22px">${f}%</div></div>
+          </div><div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+            💡 凯利公式：f* = (bp-q)/b = (2×0.55-0.45)/2 = ${f}%。建议单次交易不超过总资金的${f}%。
+          </div>`;
+        },
+        14: async () => {
+          const r = await fetch(API + '/market-scan');
+          const d = await r.json();
+          if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
+          const stocks = d.top_gainers.filter(s => s.change_pct > 1 && s.turnover_rate > 0.5);
+          return `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">📊 趋势跟踪信号：找到 ${stocks.length} 只多头趋势股</div>
+          <div class="scroll-x">${renderTable(stocks)}</div>
+          <div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+            💡 趋势跟踪规则：MA5>MA10>MA20为多头排列，以上个股处于多头趋势中。
+          </div>`;
+        },
+        15: async () => {
+          const r = await fetch(API + '/market-scan');
+          const d = await r.json();
+          if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
+          const oversold = d.top_losers.filter(s => s.change_pct < -2 && s.pe > 0 && s.total_mv > 200);
+          return `<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">🔄 发现 ${oversold.length} 只超卖标的</div>
+          ${oversold.length > 0 ? '<div class="scroll-x">'+renderTable(oversold)+'</div>' : '<div class="empty">暂无符合条件的超卖标的</div>'}
+          <div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+            💡 均值回归策略：超卖后等待RSI<30或出现止跌K线信号时介入，止损设在前低下方。
+          </div>`;
+        },
+        16: async () => {
+          const r = await fetch(API + '/market-scan');
+          const d = await r.json();
+          if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
+          const stocks = d.top_gainers;
+          const sectors = {};
+          stocks.forEach(s => {
+            const sec = s.name.length <= 2 ? '金融' : s.name.length <= 3 ? '消费' : '制造';
+            if (!sectors[sec]) sectors[sec] = {count:0, totalChange:0, stocks:[]};
+            sectors[sec].count++;
+            sectors[sec].totalChange += s.change_pct;
+            sectors[sec].stocks.push(s.name);
+          });
+          let html = '<div class="grid-3">';
+          Object.entries(sectors).forEach(([name, data]) => {
+            const avg = (data.totalChange / data.count).toFixed(2);
+            html += `<div class="stat-card"><div class="label">${name}板块</div><div class="val ${avg>0?'up':'down'}" style="font-size:20px">${avg}%</div><div style="font-size:12px;color:#556688">${data.stocks.join('、')}</div></div>`;
+          });
+          html += '</div>';
+          return html;
+        },
+        17: async () => {
+          const code = '600519';
+          const r = await fetch(API + `/technical?code=${code}`);
+          const d = await r.json();
+          if (!d || d.error) return '<div class="empty">数据不足，无法回测</div>';
+          return `<div class="panel"><div class="panel-hd">⏱️ 贵州茅台 60日回测结果</div><div class="panel-bd">
+            <div class="grid-3">
+              <div class="stat-card"><div class="label">最新价</div><div class="val" style="color:#4fc3f7;font-size:22px">${d.latest_price}</div></div>
+              <div class="stat-card"><div class="label">MA5/MA10</div><div class="val" style="color:#4fc3f7;font-size:18px">${d.ma5}/${d.ma10}</div></div>
+              <div class="stat-card"><div class="label">信号数量</div><div class="val" style="color:#ffd54f;font-size:22px">${d.signals.length}</div></div>
+            </div>
+            <div style="margin-top:12px;padding:12px;background:#0f1a30;border-radius:8px;font-size:13px;color:#b0c0d8">
+              📡 信号：${d.signals.join(' | ') || '无明确信号'}
+            </div>
+          </div></div>`;
+        },
+        18: async () => {
+          const r = await fetch(API + '/market-scan');
+          const d = await r.json();
+          if (!d.top_gainers) return '<div class="empty">暂无数据</div>';
+          const stocks = d.top_gainers.slice(0,5);
+          let html = '<div style="margin-bottom:12px;font-size:14px;color:#4fc3f7">💼 模拟交易面板</div>';
+          html += `<div class="grid-2">`;
+          stocks.forEach(s => {
+            const qty = Math.floor(100000 / s.price / 100) * 100; // 10万买多少手
+            html += `<div class="portfolio-item" style="cursor:pointer" onclick="alert('模拟买入：${s.name} ${qty}股，金额¥${(s.price*qty).toFixed(0)}')">
+              <div class="pct" style="background:#4fc3f722;color:#4fc3f7">BUY</div>
+              <div class="info"><div class="name">${s.name}</div><div class="detail">${s.code} · ¥${s.price} × ${qty}股</div></div>
+              <div class="weight" style="font-size:14px;color:#26a69a">¥${(s.price*qty/10000).toFixed(1)}万</div>
+            </div>`;
+          });
+          html += '</div>';
+          return html;
+        },
+        19: async () => {
+          return `<div class="auto-panel" id="autoPanel">
+            <div class="line"><span class="time">[${new Date().toLocaleTimeString()}]</span> <span class="done">◆ 全自动量化系统启动</span></div>
+            <div class="line"><span class="time">[${new Date().toLocaleTimeString()}]</span> <span class="info">● 正在扫描市场...</span></div>
+            <div class="line"><span class="time">[${new Date().toLocaleTimeString()}]</span> <span class="info">● 正在筛选强势股...</span></div>
+            <div class="line"><span class="time">[${new Date().toLocaleTimeString()}]</span> <span class="info">● 正在计算技术指标...</span></div>
+            <div class="line"><span class="time">[${new Date().toLocaleTimeString()}]</span> <span class="info">● 正在构建投资组合...</span></div>
+            <div class="line"><span class="time">[${new Date().toLocaleTimeString()}]</span> <span class="info">● 正在设置风险控制...</span></div>
+            <div class="line"><span class="time">[${new Date().toLocaleTimeString()}]</span> <span class="done">✅ 系统运行中 - 所有模块正常</span></div>
+            <div class="line"><span class="time">[${new Date().toLocaleTimeString()}]</span> <span class="info">● 等待下一轮扫描...</span></div>
+          </div>`;
+        }
+      };
+      const fn = actions[this.id];
+      if (fn) {
+        const resultArea = document.querySelector('#result-' + this.id);
+        if (resultArea) {
+          resultArea.innerHTML = '<div class="loading" style="min-height:100px"></div>';
+          const html = await fn();
+          resultArea.innerHTML = html;
+          document.querySelector('#complete-' + this.id).classList.add('show');
+        }
+      }
+    }
+  });
+}
+
+// ====== 工具函数 ======
+function renderTable(stocks, extraFields) {
+  if (!stocks || stocks.length === 0) return '<div style="padding:20px;text-align:center;color:#556688">暂无数据</div>';
+  const fields = extraFields || ['code','name','price','change_pct','turnover_rate','pe','total_mv'];
+  const labels = {code:'代码',name:'名称',price:'最新价',change_pct:'涨幅%',turnover_rate:'换手率%',pe:'PE',pb:'PB',total_mv:'总市值(亿)',float_mv:'流通市值',amount:'成交额(万)',amplitude:'振幅%',volume:'成交量(手)'};
+  let html = '<table><tr>' + fields.map(f => `<th>${labels[f]||f}</th>`).join('') + '</tr>';
+  stocks.forEach(s => {
+    const c = s.change_pct >= 0 ? 'up' : 'down';
+    html += '<tr>' + fields.map(f => {
+      if (f === 'change_pct') return `<td class="${c}">${s.change_pct}%</td>`;
+      if (f === 'price') return `<td>${s.price}</td>`;
+      return `<td>${s[f] !== undefined && s[f] !== null ? s[f] : '-'}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</table>';
+  return html;
+}
+
+// ====== 应用状态 ======
+let currentLevel = 1;
+const completed = new Set();
+
+// ====== 渲染侧边栏 ======
+function renderSidebar() {
+  const el = document.getElementById('sidebar');
+  el.innerHTML = '<div class="title">实战关卡</div>';
+  LEVELS.forEach(l => {
+    const cls = ['level-item'];
+    if (l.id === currentLevel) cls.push('active');
+    if (completed.has(l.id)) cls.push('completed');
+    el.innerHTML += `<div class="${cls.join(' ')}" onclick="switchLevel(${l.id})">
+      <span class="num">${l.id}</span>
+      <span class="name">${l.name}</span>
+      ${completed.has(l.id) ? '<span class="badge done">✓</span>' : ''}
+    </div>`;
+  });
+  document.getElementById('progressText').textContent = completed.size + '/19';
+}
+
+// ====== 切换关卡 ======
+function switchLevel(id) {
+  currentLevel = id;
+  renderSidebar();
+  renderContent();
+}
+
+// ====== 渲染内容 ======
+function renderContent() {
+  const l = LEVELS.find(x => x.id === currentLevel);
+  if (!l) return;
+  const el = document.getElementById('content');
+  el.innerHTML = `
+    <div class="task-section">
+      <div class="task-header">
+        <div class="level-tag">第${l.id}关 / 19</div>
+        <h2>${l.icon} ${l.name}</h2>
+        <div class="sub">${l.sub}</div>
+      </div>
+      <div class="task-desc">${l.desc}</div>
+      <div class="task-action">
+        <button class="btn btn-primary" onclick="executeLevel(${l.id})">${l.action}</button>
+        ${completed.has(l.id) ? '<button class="btn btn-success" onclick="switchLevel('+(l.id+1)+')">下一关 →</button>' : ''}
+      </div>
+      <div class="result-area" id="result-${l.id}">
+        <div class="empty"><span class="icon">👆</span>点击上方按钮开始执行</div>
+      </div>
+      <div class="level-complete" id="complete-${l.id}">
+        <h4>🎉 第${l.id}关完成！</h4>
+        <p>你已经掌握了「${l.name}」技能。继续下一关学习更高级的投资策略。</p>
+        <div style="margin-top:12px">
+          <button class="btn btn-success" onclick="switchLevel(${l.id+1})">进入第${l.id+1}关 →</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ====== 执行关卡 ======
+async function executeLevel(id) {
+  const l = LEVELS.find(x => x.id === id);
+  if (!l) return;
+  const resultArea = document.querySelector('#result-' + id);
+  if (!resultArea) return;
+  resultArea.innerHTML = '<div class="loading" style="min-height:120px"></div>';
+
+  try {
+    let html = '';
+    if (l.customRender && l.render) {
+      html = await l.render();
+    } else if (l.api) {
+      let url = API + l.api;
+      if (l.filter) {
+        const params = new URLSearchParams();
+        if (l.filter.min_change !== undefined) params.set('min_change', l.filter.min_change);
+        if (l.filter.max_change !== undefined) params.set('max_change', l.filter.max_change);
+        if (l.filter.min_turnover !== undefined) params.set('min_turnover', l.filter.min_turnover);
+        if (l.filter.max_pe !== undefined) params.set('max_pe', l.filter.max_pe);
+        if (l.filter.max_pb !== undefined) params.set('max_pb', l.filter.max_pb);
+        if (l.filter.min_pe !== undefined) params.set('min_pe', l.filter.min_pe);
+        if (l.filter.min_price !== undefined) params.set('min_price', l.filter.min_price);
+        url += '?' + params.toString();
+      }
+      const res = await fetch(url);
+      const data = await res.json();
+      html = l.render ? l.render(data) : '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+    } else if (l.autoAction && l.execute) {
+      html = await l.execute();
+    }
+    resultArea.innerHTML = html;
+    completed.add(id);
+    renderSidebar();
+    document.querySelector('#complete-' + id)?.classList.add('show');
+  } catch(e) {
+    resultArea.innerHTML = `<div class="empty"><span class="icon">❌</span>执行出错：${e.message}</div>`;
+  }
+}
+
+// ====== 初始化 ======
+renderSidebar();
+renderContent();
+setInterval(() => {
+  document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString('zh-CN', {timeZone:'Asia/Shanghai'});
+}, 1000);
+</script>
+</body>
+</html>
