@@ -129,7 +129,17 @@ def generate_mock_stocks():
     import random
     now = datetime.now()
     stocks = []
-    for code, name, base_price, _ in MOCK_STOCKS:
+    # 各股票锚定特征 [pe, pb, 换手率倾向], 确保筛选总有结果
+    profiles = [
+        (35, 8, 0.5), (5, 0.8, 2.5), (7, 1.0, 1.8), (10, 1.5, 1.2), (55, 6, 1.5),
+        (18, 2.5, 0.3), (25, 4, 3.5), (22, 5, 1.0), (20, 5, 0.8), (45, 7, 1.2),
+        (12, 3, 0.6), (6, 0.9, 2.0), (18, 2, 3.8), (40, 5, 2.5), (12, 1.2, 0.4),
+        (8, 1.1, 1.5), (10, 2.5, 1.8), (14, 3, 0.7), (30, 4, 4.5), (15, 5, 0.9),
+        (9, 0.8, 0.3), (8, 0.9, 0.2), (6, 0.7, 0.1), (5, 0.8, 0.2), (5, 0.7, 0.1),
+        (14, 3, 1.0), (12, 3.5, 0.5), (20, 4, 3.2), (17, 3, 2.0), (22, 4, 1.5),
+        (25, 2, 1.8), (35, 5, 4.0), (15, 2.5, 1.2), (15, 1.5, 0.6),
+    ]
+    for i, (code, name, base_price, _) in enumerate(MOCK_STOCKS):
         mp = random.uniform(-0.03, 0.04)  # 市场波动
         change_pct = round(mp * 100 + random.gauss(0, 1.5), 2)
         price = round(base_price * (1 + change_pct / 100), 2)
@@ -139,9 +149,11 @@ def generate_mock_stocks():
         open_p = round(prev_close * (1 + random.uniform(-0.005, 0.005)), 2)
         amount = round(random.uniform(0.5, 50) * price, 2)
         volume = int(amount / price * 100) if price > 0 else 0
-        turnover = round(random.uniform(0.1, 5.0), 2)
-        pe = round(random.uniform(5, 60), 2)
-        pb = round(random.uniform(0.5, 8), 2)
+        # 使用锚定特征，确保筛选总有结果
+        prof = profiles[i % len(profiles)]
+        turnover = round(max(0.1, prof[2] + random.uniform(-0.25, 0.25)), 2)
+        pe = round(max(1, prof[0] + random.uniform(-2, 2)), 2)
+        pb = round(max(0.1, prof[1] + random.uniform(-0.25, 0.25)), 2)
         amplitude = round(abs(high - low) / prev_close * 100, 2)
         total_mv = round(random.uniform(100, 20000), 2)
         float_mv = round(total_mv * random.uniform(0.3, 1.0), 2)
