@@ -510,4 +510,6 @@ if __name__ == '__main__':
     print(f"热门股票数: {len(HOT_STOCKS)}")
     print(f"前端地址: http://localhost:5888/")
     print("=" * 50)
-    app.run(host='0.0.0.0', port=5888, debug=False)
+    import os
+    port = int(os.environ.get('PORT', 5888))
+    app.run(host='0.0.0.0', port=port, debug=False)
